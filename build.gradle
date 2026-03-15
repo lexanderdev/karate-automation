@@ -1,0 +1,72 @@
+plugins {
+    id 'java'
+    id 'jacoco'
+}
+
+group 'org.example'
+version '1.0-SNAPSHOT'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation "com.intuit.karate:karate-junit5:${project.karateVersion}"
+    testImplementation "net.masterthought:cucumber-reporting:${project.cucumberReportingVersion}"
+}
+
+// ─── Tarea default: suite completa con ManagementUserTest ───────────────────
+test {
+    useJUnitPlatform()
+    systemProperty 'karate.env', System.getProperty('karate.env', 'dev')
+    // Excluir los runners especializados del task 'test' para evitar conflictos.
+    // Ejecutarlos explícitamente: ./gradlew smoke  o  ./gradlew regression
+    exclude 'runners/**'
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+    }
+}
+
+// ─── Smoke: sanity check rápido (PRs / pre-deploy) ──────────────────────────
+tasks.register('smoke', Test) {
+    useJUnitPlatform()
+    systemProperty 'karate.env', System.getProperty('karate.env', 'dev')
+
+    include 'runners/SmokeTestRunner.class'
+    testLogging { events 'passed', 'skipped', 'failed' }
+    description = 'Ejecuta solo escenarios @Smoke. Uso: ./gradlew smoke -Dkarate.env=staging'
+    group = 'verification'
+}
+
+// ─── Regression: suite completa para CI / nightly ───────────────────────────
+tasks.register('regression', Test) {
+    useJUnitPlatform()
+    systemProperty 'karate.env', System.getProperty('karate.env', 'dev')
+    include 'runners/RegressionTestRunner.class'
+    testLogging { events 'passed', 'skipped', 'failed' }
+    description = 'Ejecuta todos los escenarios @Regression. Uso: ./gradlew regression -Dkarate.env=staging'
+    group = 'verification'
+}
+
+// ─── Cobertura ───────────────────────────────────────────────────────────────
+jacocoTestReport {
+    dependsOn test
+    reports {
+        html.required = true
+        xml.required = true
+    }
+}
+
+sourceSets {
+    test {
+        resources {
+            srcDir file('src/test/java')
+            exclude '**/*.java'
+        }
+    }
+}

@@ -40,5 +40,7 @@ bin/
 .vscode/
 
 ### Mac OS ###
-.DS_Storegit add .
-cloude.md
+.DS_Store
+
+### Claude Code ###
+CLAUDE.md
